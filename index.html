@@ -4,42 +4,23 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity Web Player | GamingPlatformTest</title>
-
 </head>
-
 <body style="text-align: center; padding: 0; border: 0; margin: 0;">
-<canvas id="unity-canvas"
-        width=960
-        height=600
-        tabindex="-1"
-        style="width: 960px; height: 600px;
-               background: #231F20">
-</canvas>
-
-
-<script>
-    console.log("HTML loaded");
-</script>
-
-<!-- Make unityInstance global -->
-<script>
-    let unityInstance = null;
-</script>
-
+<canvas id="unity-canvas" width=960 height=600 tabindex="-1" style="width: 960px; height: 600px; background: #231F20"></canvas>
 <script src="Build/app.loader.js"></script>
-
 <script>
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        const meta = document.createElement('meta');
+        // Mobile device style: fill the whole browser client area with the game canvas:
+        var meta = document.createElement('meta');
         meta.name = 'viewport';
-        meta.content =
-            'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.head.appendChild(meta);
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
 
-        const canvas = document.querySelector("#unity-canvas");
+        var canvas = document.querySelector("#unity-canvas");
         canvas.style.width = "100%";
         canvas.style.height = "100%";
         canvas.style.position = "fixed";
+
         document.body.style.textAlign = "left";
 
     }
@@ -53,57 +34,52 @@
         companyName: "DefaultCompany",
     productName: "GamingPlatformTest",
     productVersion: "0.1.0",
-    }).then((instance) => {
-        unityInstance = instance;
-
-        console.log("Unity instance ready");
-
+    // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
+    // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+    }).then((unityInstance) => {
     }).catch((message) => {
         alert(message);
     });
 </script>
 
-<!-- Pusher -->
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 
 <script>
-    const pusher = new Pusher("YOUR_PUSHER_KEY", {
+    const pusher = new Pusher("522fd10a074d964fa54f", {
         cluster: "eu"
     });
+    
+    console.log("pusher initialized: " + pusher);
 
-    console.log("Pusher initialized", pusher);
+    const channel = pusher.subscribe("game-round");
 
-    function sendToUnity(method, data) {
-        if (!unityInstance) {
-            console.warn("Unity not ready, dropped:", method, data);
-            return;
+    channel.bind("round-ended", function(data) {
+        console.log("Pusher - Round ended:", data);
+
+        // Send to Unity
+        if (typeof unityInstance !== "undefined") {
+            unityInstance.SendMessage(
+                "PusherListener",
+                "OnRoundEnded",
+                JSON.stringify(data)
+            );
         }
-
-        unityInstance.SendMessage(
-            "PusherListener",
-            method,
-            JSON.stringify(data)
-        );
-    }
-
-    // Game events
-    const gameChannel = pusher.subscribe("game-round");
-
-    gameChannel.bind("round-ended", (data) => {
-        console.log("Pusher - round-ended", data);
-        sendToUnity("OnRoundEnded", data);
     });
-
-    // Server events
+    
     const serverChannel = pusher.subscribe("server-status");
-
-    serverChannel.bind("wake-up", (data) => {
-        console.log("Pusher - wake-up", data);
-        sendToUnity("OnServerWakeUp", data);
+    serverChannel.bind("wake-up", function(data){
+       console.log("Pusher - server-wake-up", data);
+       if(typeof unityInstance !== "undefined") {
+           unityInstance.SendMessage(
+               "PusherListener",
+               "OnServerWakeUp",
+               JSON.stringify(data)
+           );
+       }
     });
-
-    serverChannel.bind("tick", (data) => {
-        console.log("Pusher - tick", data);
+    
+    serverChannel.bind("tick", function (data){
+        console.log("Pusher - tick");
     });
 </script>
 
