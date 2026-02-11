@@ -4,19 +4,28 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity Web Player | GamingPlatformTest</title>
+    <style>
+        /* optional styling for host */
+        body { margin:0; padding:0; overflow:hidden; }
+    </style>
 </head>
-<body style="text-align: center; padding: 0; border: 0; margin: 0;">
-<canvas id="unity-canvas" width=960 height=600 tabindex="-1" style="width: 960px; height: 600px; background: #231F20"></canvas>
+<body>
+
+<!-- Unity Canvas -->
+<canvas id="unity-canvas" width=960 height=600 tabindex="-1"
+        style="width: 960px; height: 600px; background: #231F20"></canvas>
+
+
+<!-- Unity Loader -->
 <script src="Build/app.loader.js"></script>
 <script>
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-        var meta = document.createElement('meta');
+        const meta = document.createElement('meta');
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.head.appendChild(meta);
 
-        var canvas = document.querySelector("#unity-canvas");
+        const canvas = document.getElementById("unity-canvas");
         canvas.style.width = "100%";
         canvas.style.height = "100%";
         canvas.style.position = "fixed";
@@ -25,7 +34,7 @@
 
     }
 
-    createUnityInstance(document.querySelector("#unity-canvas"), {
+    createUnityInstance(document.getElementById("unity-canvas"), {
         arguments: [],
         dataUrl: "Build/app.data.unityweb",
         frameworkUrl: "Build/app.framework.js.unityweb",
@@ -34,53 +43,109 @@
         companyName: "DefaultCompany",
     productName: "GamingPlatformTest",
     productVersion: "0.1.0",
-    // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-    // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
     }).then((unityInstance) => {
-    }).catch((message) => {
-        alert(message);
-    });
+        window.unityInstance = unityInstance;
+    }).catch((message) => { alert(message); });
+
+
+    function SendDataToExternalApp(data) {
+        var iframe = document.getElementById("externalWebGL");
+
+        if (!iframe || !iframe.contentWindow) {
+            console.warn("External app iframe not ready");
+            return;
+        }
+
+        iframe.contentWindow.postMessage(
+            {
+                type: "INIT_DATA",
+                payload: data
+            },
+            "*" // you can restrict this to your domain later
+        );
+    }
+
+
 </script>
 
+<!-- Pusher -->
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-
 <script>
-    const pusher = new Pusher("522fd10a074d964fa54f", {
-        cluster: "eu"
-    });
-    
-    console.log("pusher initialized: " + pusher);
+    const pusher = new Pusher("522fd10a074d964fa54f", { cluster: "eu" });
+    console.log("pusher initialized:", pusher);
+
+    function sendUnityEvent(method, payload) {
+        window.unityInstance?.SendMessage("PusherListener", method, JSON.stringify(payload));
+    }
 
     const channel = pusher.subscribe("game-round");
-
-    channel.bind("round-ended", function(data) {
+    channel.bind("round-ended", (data) => {
         console.log("Pusher - Round ended:", data);
+        sendUnityEvent("OnRoundEnded", data);
+    });
 
-        // Send to Unity
-        if (typeof unityInstance !== "undefined") {
-            unityInstance.SendMessage(
-                "PusherListener",
-                "OnRoundEnded",
-                JSON.stringify(data)
-            );
-        }
-    });
-    
     const serverChannel = pusher.subscribe("server-status");
-    serverChannel.bind("wake-up", function(data){
-       console.log("Pusher - server-wake-up", data);
-       if(typeof unityInstance !== "undefined") {
-           unityInstance.SendMessage(
-               "PusherListener",
-               "OnServerWakeUp",
-               JSON.stringify(data)
-           );
-       }
+    serverChannel.bind("wake-up", (data) => {
+        console.log("Pusher - server-wake-up:", data);
+        sendUnityEvent("OnServerWakeUp", data);
     });
-    
-    serverChannel.bind("tick", function (data){
-        console.log("Pusher - tick");
-    });
+    serverChannel.bind("tick", (data) => console.log("Pusher - tick:", data));
+</script>
+
+<!-- Dynamic WebGL overlay -->
+<script>
+    // create overlay div
+    const overlay = document.createElement('div');
+    overlay.id = 'webgl-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '50px';        // leave top 50px visible
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.display = 'none';
+    overlay.style.zIndex = '999999';
+    overlay.style.background = 'rgba(0,0,0,0)';
+
+    // create iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'externalWebGL';
+    iframe.style.position = 'fixed';
+    iframe.style.background = 'rgba(1,1,0,0)';
+    iframe.style.left = '0';
+    iframe.style.top = '50px';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    overlay.appendChild(iframe);
+
+    document.body.appendChild(overlay);
+
+    // create close button
+    const btnClose = document.createElement('button');
+    btnClose.id = 'close-webgl';
+    btnClose.textContent = '✕ Close';
+    btnClose.style.position = 'fixed';
+    btnClose.style.top = '10px';
+    btnClose.style.right = '16px';
+    btnClose.style.zIndex = '1000000';
+    btnClose.style.padding = '6px 12px';
+    btnClose.style.background = 'rgba(0,0,0,0.5)';
+    btnClose.style.color = 'white';
+    btnClose.style.border = 'none';
+    btnClose.style.cursor = 'pointer';
+    document.body.appendChild(btnClose);
+
+    // close button behavior
+    btnClose.onclick = () => {
+        iframe.src = 'about:blank'; // unload WebGL
+        overlay.style.display = 'none';
+    };
+
+    // global function to open overlay
+    window.openWebGL = (url) => {
+        iframe.src = url;
+        overlay.style.display = 'block';
+    };
 </script>
 
 </body>
