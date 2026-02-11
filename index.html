@@ -83,6 +83,11 @@
         console.log("Pusher - Round ended:", data);
         sendUnityEvent("OnRoundEnded", data);
     });
+    
+    channel.bind("round-updated", (data) => {
+        console.log("Pusher - Round Updated:", data);
+        sendUnityEvent("OnRoundUpdated", data);
+    });
 
     const serverChannel = pusher.subscribe("server-status");
     serverChannel.bind("wake-up", (data) => {
