@@ -71,7 +71,11 @@
 <!-- Pusher -->
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
-    const pusher = new Pusher("522fd10a074d964fa54f", { cluster: "eu" });
+    const pusher = new Pusher("522fd10a074d964fa54f", 
+        { 
+            cluster: "eu",
+            authEndpoint: "https://minigame-server-okif.onrender.com/pusher/auth"
+        });
     console.log("pusher initialized:", pusher);
 
     function sendUnityEvent(method, payload) {
@@ -95,6 +99,32 @@
         sendUnityEvent("OnServerWakeUp", data);
     });
     serverChannel.bind("tick", (data) => console.log("Pusher - tick:", data));
+
+    // Generic function to subscribe to a private player channel
+    function subscribePlayerChannel(playerId, unityObjectName) {
+        const channelName = `private-player.${playerId}`;
+
+        const channel = pusher.subscribe(channelName);
+
+        channel.bind_global(function(eventName, data) {
+            console.log(`[Pusher] Event on ${channelName}: ${eventName}`, data);
+
+            // Forward to Unity
+            if (typeof unityInstance !== 'undefined') {
+                unityInstance.SendMessage(
+                    unityObjectName,
+                    'OnPusherEvent',
+                    JSON.stringify({ event: eventName, data })
+                );
+            }
+        });
+    }
+
+    // Example usage: Unity tells the browser which player to subscribe
+    window.SubscribePlayerChannelFromUnity = function(playerId) {
+        const unityObjectName = 'PusherBridge'; // Unity GameObject that receives events
+        subscribePlayerChannel(playerId, unityObjectName);
+    };
 </script>
 
 <!-- Dynamic WebGL overlay -->
