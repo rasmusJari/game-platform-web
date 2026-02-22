@@ -82,23 +82,37 @@
         window.unityInstance?.SendMessage("PusherListener", method, JSON.stringify(payload));
     }
 
-    const channel = pusher.subscribe("game-round");
-    channel.bind("round-ended", (data) => {
-        console.log("Pusher - Round ended:", data);
-        sendUnityEvent("OnRoundEnded", data);
+    const channel = pusher.subscribe("public-channel");
+    channel.bind_global(function(eventName, data) {
+        console.log("Pusher - Global event:", eventName, data);
+        // Forward to Unity
+        if (typeof unityInstance !== 'undefined') {
+            unityInstance.SendMessage(
+                'PusherListener',
+                'OnPusherEvent',
+                JSON.stringify({ event: eventName, data })
+            );
+        }
+       // sendUnityEvent("OnMessageReceived", { event: eventName, data: data });
     });
     
-    channel.bind("round-updated", (data) => {
-        console.log("Pusher - Round Updated:", data);
-        sendUnityEvent("OnRoundUpdated", data);
-    });
-
-    const serverChannel = pusher.subscribe("server-status");
-    serverChannel.bind("wake-up", (data) => {
-        console.log("Pusher - server-wake-up:", data);
-        sendUnityEvent("OnServerWakeUp", data);
-    });
-    serverChannel.bind("tick", (data) => console.log("Pusher - tick:", data));
+    // const channel = pusher.subscribe("game-round");
+    // channel.bind("round-ended", (data) => {
+    //     console.log("Pusher - Round ended:", data);
+    //     sendUnityEvent("OnRoundEnded", data);
+    // });
+    //
+    // channel.bind("round-updated", (data) => {
+    //     console.log("Pusher - Round Updated:", data);
+    //     sendUnityEvent("OnRoundUpdated", data);
+    // });
+    //
+    // const serverChannel = pusher.subscribe("server-status");
+    // serverChannel.bind("wake-up", (data) => {
+    //     console.log("Pusher - server-wake-up:", data);
+    //     sendUnityEvent("OnServerWakeUp", data);
+    // });
+    // serverChannel.bind("tick", (data) => console.log("Pusher - tick:", data));
 
     // Generic function to subscribe to a private player channel
     function subscribePlayerChannel(playerId, unityObjectName) {
@@ -122,7 +136,7 @@
 
     // Example usage: Unity tells the browser which player to subscribe
     window.SubscribePlayerChannelFromUnity = function(playerId) {
-        const unityObjectName = 'PusherBridge'; // Unity GameObject that receives events
+        const unityObjectName = 'PusherListener'; // Unity GameObject that receives events
         subscribePlayerChannel(playerId, unityObjectName);
     };
 </script>
