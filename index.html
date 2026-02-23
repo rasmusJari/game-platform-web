@@ -7,13 +7,18 @@
     <style>
         /* optional styling for host */
         body { margin:0; padding:0; overflow:hidden; }
+        #unity-canvas {
+            width: 100vw;
+            height: 100dvh;
+            display: block;
+            background: #4287f5;
+        }
     </style>
 </head>
 <body>
 
 <!-- Unity Canvas -->
-<canvas id="unity-canvas" width=960 height=600 tabindex="-1"
-        style="width: 960px; height: 600px; background: #231F20"></canvas>
+<canvas id="unity-canvas" tabindex="-1"></canvas>
 
 
 <!-- Unity Loader -->
@@ -147,7 +152,7 @@
     const overlay = document.createElement('div');
     overlay.id = 'webgl-overlay';
     overlay.style.position = 'fixed';
-    overlay.style.top = '50px';        // leave top 50px visible
+    overlay.style.top = '150px';        // leave top 50px visible
     overlay.style.left = '0';
     overlay.style.right = '0';
     overlay.style.bottom = '0';
@@ -161,7 +166,7 @@
     iframe.style.position = 'fixed';
     iframe.style.background = 'rgba(1,1,0,0)';
     iframe.style.left = '0';
-    iframe.style.top = '50px';
+    iframe.style.top = '150px';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
@@ -169,26 +174,26 @@
 
     document.body.appendChild(overlay);
 
-    // create close button
-    const btnClose = document.createElement('button');
-    btnClose.id = 'close-webgl';
-    btnClose.textContent = '✕ Close';
-    btnClose.style.position = 'fixed';
-    btnClose.style.top = '10px';
-    btnClose.style.right = '16px';
-    btnClose.style.zIndex = '1000000';
-    btnClose.style.padding = '6px 12px';
-    btnClose.style.background = 'rgba(0,0,0,0.5)';
-    btnClose.style.color = 'white';
-    btnClose.style.border = 'none';
-    btnClose.style.cursor = 'pointer';
-    document.body.appendChild(btnClose);
-
-    // close button behavior
-    btnClose.onclick = () => {
-        iframe.src = 'about:blank'; // unload WebGL
-        overlay.style.display = 'none';
-    };
+    // // create close button
+    // const btnClose = document.createElement('button');
+    // btnClose.id = 'close-webgl';
+    // btnClose.textContent = '✕ Close';
+    // btnClose.style.position = 'fixed';
+    // btnClose.style.top = '10px';
+    // btnClose.style.right = '16px';
+    // btnClose.style.zIndex = '1000000';
+    // btnClose.style.padding = '6px 12px';
+    // btnClose.style.background = 'rgba(0,0,0,0.5)';
+    // btnClose.style.color = 'white';
+    // btnClose.style.border = 'none';
+    // btnClose.style.cursor = 'pointer';
+    // document.body.appendChild(btnClose);
+    //
+    // // close button behavior
+    // btnClose.onclick = () => {
+    //     iframe.src = 'about:blank'; // unload WebGL
+    //     overlay.style.display = 'none';
+    // };
 
     // global function to open overlay
     window.openWebGL = (url) => {
