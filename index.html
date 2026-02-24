@@ -146,13 +146,15 @@
     };
 </script>
 
+
+
 <!-- Dynamic WebGL overlay -->
 <script>
     // create overlay div
     const overlay = document.createElement('div');
     overlay.id = 'webgl-overlay';
     overlay.style.position = 'fixed';
-    overlay.style.top = '150px';        // leave top 50px visible
+    overlay.style.top = '0px';        // leave top 50px visible
     overlay.style.left = '0';
     overlay.style.right = '0';
     overlay.style.bottom = '0';
@@ -166,7 +168,7 @@
     iframe.style.position = 'fixed';
     iframe.style.background = 'rgba(1,1,0,0)';
     iframe.style.left = '0';
-    iframe.style.top = '150px';
+    iframe.style.top = '0';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
